@@ -1,0 +1,10 @@
+sample
+
+*.exe
+
+# don't include any of the compiled object files
+*.o
+
+# ignore macOS files
+.DS_Store
+._*
