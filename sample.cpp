@@ -1,8 +1,11 @@
 #include "glad/glad.h"
 #include "shader.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <iomanip>
+#include <math.h>
 
 /**
  * Callback for GLFW when the window is resized.
@@ -80,14 +83,14 @@ int main(int argc, char* argv[])
 	Shader theShader;
 
 	float vertices[] = {
-		0.5f, 0.5f, 0.0f, // top right
-		0.5f, -0.5f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f, // bottom left
-		-0.5f, 0.5f, 0.0f // top left
+		// positions       // colors
+		0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
+		0.0f, 0.5f, 0.0f,   0.0f, 0.0f, 1.0f, // top center
 	};
 	unsigned int indices[] = {
-		0, 1, 3,
-		1, 2, 3,
+		0, 1, 2,
+//		1, 2, 3,
 	};
 
 	unsigned int VAO, VBO, EBO;
@@ -110,8 +113,11 @@ int main(int argc, char* argv[])
 
 	// link vertex attributes
 	// layout location 0, size of vertex attribute, data type, don't normalize, stride, offset
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+	// layout location 1, size of vertex attribute, data type, don't normalize, stride, offset
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	// unbind the VBO so we don't accidently modify it
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -127,8 +133,12 @@ int main(int argc, char* argv[])
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		float timeValue = glfwGetTime();
+		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+		int vertexColorLocation = glGetUniformLocation(theShader.id, "ourColor");
 		// use the shader program
 		theShader.use();
+		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 		
 		// bind to the vertex array object
 		glBindVertexArray(VAO);

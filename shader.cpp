@@ -15,12 +15,6 @@ inline static const char* nameForType(const unsigned int type)
  */
 static unsigned int createShader(unsigned int type, const char* src, const size_t size)
 {
-	printf(nameForType(type));
-	printf(" Shader (%zu bytes):\n", size);
-	for(size_t i = 0; i < size; i++)
-		putc(src[i], stdout);
-
-
 	unsigned int shader = glCreateShader(type);
 	const int size_i = size;
 	glShaderSource(shader, 1, &src, &size_i);
@@ -40,8 +34,8 @@ static unsigned int createShader(unsigned int type, const char* src, const size_
 
 // include the compiled in shaders
 
-extern const char* _binary_vertexShader_vert_start;
-extern const char* _binary_vertexShader_vert_end;
+extern const char _binary_vertexShader_vert_start[];
+extern const char _binary_vertexShader_vert_end[];
 // the linker seems to not like this
 //extern const size_t _binary_vertexShader_vert_size;
 const size_t _binary_vertexShader_vert_size = _binary_vertexShader_vert_end - _binary_vertexShader_vert_start;
@@ -51,8 +45,8 @@ static unsigned int createVertexShader(void)
 	return createShader(GL_VERTEX_SHADER, _binary_vertexShader_vert_start, _binary_vertexShader_vert_size);
 }
 
-extern const char* _binary_fragmentShader_frag_start;
-extern const char* _binary_fragmentShader_frag_end;
+extern const char _binary_fragmentShader_frag_start[];
+extern const char _binary_fragmentShader_frag_end[];
 // the linker seems to not like this
 //extern const size_t _binary_fragmentShader_frag_size;
 const size_t _binary_fragmentShader_frag_size = _binary_fragmentShader_frag_end - _binary_fragmentShader_frag_start;
@@ -95,7 +89,27 @@ Shader::Shader()
 Shader::~Shader()
 {
 	// delete the now unneeded shader program
-	glDeleteProgram(id);
+	//glDeleteProgram(id);
+}
+
+/*template<class T> void setUniform(const std::string &name, T... value) const
+{
+
+}*/
+
+void Shader::setValue(const std::string &name, bool value) const
+{
+	glUniform1i(glGetUniformLocation(id, name.c_str()), (int)value);
+}
+
+void Shader::setValue(const std::string &name, int value) const
+{
+	glUniform1i(glGetUniformLocation(id, name.c_str()), value);
+}
+
+void Shader::setValue(const std::string &name, float value) const
+{
+	glUniform1f(glGetUniformLocation(id, name.c_str()), value);
 }
 
 void Shader::use()
