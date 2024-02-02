@@ -1,11 +1,16 @@
 #include "glad/glad.h"
 #include "shader.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "texture.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <iomanip>
 #include <math.h>
+
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
+
+#include "maze.h"
 
 /**
  * Callback for GLFW when the window is resized.
@@ -27,15 +32,28 @@ void toggleWireframe(void)
 }
 
 bool allowChangeWireframe = true;
+bool allowChangeMaze = true;
 
 /**
  * Processes input for the window
  */
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, Maze& maze)
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 	if(glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
+	{
+		// prevent holding F1
+		if(allowChangeMaze)
+		{
+			maze.clearMaze();
+			maze.generate();
+		}
+		allowChangeMaze = false;
+	}
+	else
+		allowChangeMaze = true;
+	if(glfwGetKey(window, GLFW_KEY_F9) == GLFW_PRESS)
 	{
 		// prevent wireframe mode toggling on/off instantly
 		if(allowChangeWireframe)
@@ -83,14 +101,15 @@ int main(int argc, char* argv[])
 	Shader theShader;
 
 	float vertices[] = {
-		// positions       // colors
-		0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
-		0.0f, 0.5f, 0.0f,   0.0f, 0.0f, 1.0f, // top center
+		// positions        // colors          // texture coords
+		1.0f, 1.0f, 0.0f,   1.0f, 0.0f, 0.0f,  1.0f, 1.0f, // top right
+		1.0f, -1.0f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f, // bottom right
+		-1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,  0.0f, 0.0f, // bottom left
+		-1.0f, 1.0f, 0.0f,  1.0f, 1.0f, 0.0f,  0.0f, 1.0f // top left
 	};
 	unsigned int indices[] = {
-		0, 1, 2,
-//		1, 2, 3,
+		0, 1, 3,
+		1, 2, 3,
 	};
 
 	unsigned int VAO, VBO, EBO;
@@ -113,36 +132,58 @@ int main(int argc, char* argv[])
 
 	// link vertex attributes
 	// layout location 0, size of vertex attribute, data type, don't normalize, stride, offset
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	// layout location 1, size of vertex attribute, data type, don't normalize, stride, offset
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+	// layout location 2, size of vertex attribute, data type, don't normalize, stride, offset
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// unbind the VBO so we don't accidently modify it
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	// unbind the VAO so we don't accidently modify it
 	glBindVertexArray(0);
 
+	Maze maze(25, 20);
+
+	// TEXTURE
+	unsigned int texture = createTexture("asset/container.jpg");
+	Maze::loadMazeTextures("asset/maze/");
+
 	// main render loop
 	while(!glfwWindowShouldClose(window))
 	{
-		processInput(window);
+		processInput(window, maze);
 
 		// clear the frame
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		// bind to the vertex array object (defines the shape)
+		glBindVertexArray(VAO);
+		// set the first texture as active (required for some drivers)
+		glActiveTexture(GL_TEXTURE0);
 
-		float timeValue = glfwGetTime();
-		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-		int vertexColorLocation = glGetUniformLocation(theShader.id, "ourColor");
+		// render the maze
+		maze.render(theShader);
+
+		/*glBindTexture(GL_TEXTURE_2D, texture);
 		// use the shader program
 		theShader.use();
-		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
+		{
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+		theShader.setValue("transform", trans);
+		//glUniformMatrix4fv(glGetUniformLocation(theShader.id, "translate"), 1, GL_FALSE, &trans[0][0]);
 		
 		// bind to the vertex array object
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}*/
+
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

@@ -1,10 +1,10 @@
 exe = sample
 libs = -lglfw -lGL -lX11 -lpthread -lXrandr -ldl
-objects = glad.o vertexShader.o fragmentShader.o shader.o
 rm = rm -f
 cxx = g++ -O3
 cc = gcc -O3
 ld = ld
+objects = glad.o vertexShader.o fragmentShader.o shader.o maze.o texture.o
 
 $(target): $(exe)
 
@@ -19,13 +19,20 @@ windows: $(exe)
 
 
 
-
-
 glad.o: glad.c
 	$(cc) -c $< -o $@
 
 shader.o: shader.cpp shader.h
-	$(cxx) -c shader.cpp
+	$(cxx) -c shader.cpp -o $@
+
+texture.o: texture.cpp texture.h
+	$(cxx) -c texture.cpp -o $@
+
+maze.o: maze.cpp maze.h
+	$(cxx) -c maze.cpp -o maze.o
+
+path.o: path.cpp path.h
+	$(cxx) -c path.cpp -o path.h
 
 vertexShader.o: vertexShader.vert
 	$(ld) -z noexecstack -r -b binary -o $@ $<
