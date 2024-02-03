@@ -11,6 +11,7 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #include "maze.h"
+#include "path.h"
 
 /**
  * Callback for GLFW when the window is resized.
@@ -31,13 +32,17 @@ void toggleWireframe(void)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
+
+
 bool allowChangeWireframe = true;
 bool allowChangeMaze = true;
+bool showPath = false;
+bool allowChangeShowPath = true;
 
 /**
  * Processes input for the window
  */
-void processInput(GLFWwindow *window, Maze& maze)
+void processInput(GLFWwindow *window, Maze& maze, Path& path)
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -48,11 +53,21 @@ void processInput(GLFWwindow *window, Maze& maze)
 		{
 			maze.clearMaze();
 			maze.generate();
+			path.findRoute(Coord(0, 0), Coord(24, 19));
 		}
 		allowChangeMaze = false;
 	}
 	else
 		allowChangeMaze = true;
+	if(glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
+	{
+		// prevent holding F2
+		if(allowChangeShowPath)
+			showPath = !showPath;
+		allowChangeShowPath = false;
+	}
+	else
+		allowChangeShowPath = true;
 	if(glfwGetKey(window, GLFW_KEY_F9) == GLFW_PRESS)
 	{
 		// prevent wireframe mode toggling on/off instantly
@@ -147,18 +162,20 @@ int main(int argc, char* argv[])
 	glBindVertexArray(0);
 
 	Maze maze(25, 20);
+	Path path(maze, Coord(0, 0), Coord(24, 19));
 
 	// TEXTURE
 	unsigned int texture = createTexture("asset/container.jpg");
 	Maze::loadMazeTextures("asset/maze/");
+	Path::loadPathTextures();
 
 	// main render loop
 	while(!glfwWindowShouldClose(window))
 	{
-		processInput(window, maze);
+		processInput(window, maze, path);
 
 		// clear the frame
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		// bind to the vertex array object (defines the shape)
 		glBindVertexArray(VAO);
@@ -167,6 +184,8 @@ int main(int argc, char* argv[])
 
 		// render the maze
 		maze.render(theShader);
+		if(showPath)
+			path.render(theShader, 0);
 
 		/*glBindTexture(GL_TEXTURE_2D, texture);
 		// use the shader program

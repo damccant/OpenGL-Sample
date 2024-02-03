@@ -2,28 +2,25 @@
 
 inline static const Coord mkCoord(const scalar x, const scalar y)
 {
-	Coord c;
-	c.first = x;
-	c.second = y;
-	return c;
+	return Coord(x, y);
 }
 
-bool Maze::areCoordsValid(const Coord c)
+bool Maze::areCoordsValid(const Coord c) const
 {
 	return areCoordsValid(c.first, c.second);
 }
 
-bool Maze::areCoordsValid(const scalar x, const scalar y)
+bool Maze::areCoordsValid(const scalar x, const scalar y) const
 {
 	return x >= 0 && x < width && y >= 0 && y < height;
 }
 
-SetOfCoord Maze::getAdjacentNodes(const Coord c)
+SetOfCoord Maze::getAdjacentNodes(const Coord c) const
 {
 	return getAdjacentNodes(c.first, c.second);
 }
 
-SetOfCoord Maze::getAdjacentNodes(const scalar x, const scalar y)
+SetOfCoord Maze::getAdjacentNodes(const scalar x, const scalar y) const
 {
 	SetOfCoord adjacent;
 	if(!areCoordsValid(x, y))
@@ -39,12 +36,12 @@ SetOfCoord Maze::getAdjacentNodes(const scalar x, const scalar y)
 	return adjacent;
 }
 
-bool Maze::areNodesAdjacent(const Coord c1, const Coord c2)
+bool Maze::areNodesAdjacent(const Coord c1, const Coord c2) const
 {
 	return areNodesAdjacent(c1.first, c1.second, c2.first, c2.second);
 }
 
-bool Maze::areNodesAdjacent(const scalar x1, const scalar y1, const scalar x2, const scalar y2)
+bool Maze::areNodesAdjacent(const scalar x1, const scalar y1, const scalar x2, const scalar y2) const
 {
 	if(!areCoordsValid(x1, y1) || !areCoordsValid(x2, y2))
 		return false;
@@ -126,11 +123,41 @@ Maze::Maze(const scalar width, const scalar height)
 	for(scalar x = 0; x < width; x++)
 	{
 		nodes[x] = new unsigned char[height];
-		for(int y = 0; y < height; y++)
+		for(scalar y = 0; y < height; y++)
 			nodes[x][y] = 0;
 	}
 	generate();
 }
+
+Maze::Maze(const Maze& other)
+{
+	this->width = other.width;
+	this->height = other.height;
+	nodes = new unsigned char*[width];
+	for(scalar x = 0; x < width; x++)
+	{
+		nodes[x] = new unsigned char[height];
+		for(scalar y = 0; y < height; y++)
+			nodes[x][y] = other.nodes[x][y];
+	}
+}
+
+Maze& Maze::operator=(const Maze& that)
+{
+	unsigned char **local_nodes = new unsigned char*[width];
+	for(scalar x = 0; x < width; x++)
+	{
+		local_nodes[x] = new unsigned char[height];
+		for(scalar y = 0; y < height; y++)
+			local_nodes[x][y] = that.nodes[x][y];
+	}
+	for(scalar x = 0; x < width; x++)
+		delete[] nodes[x];
+	delete[] nodes;
+	nodes = local_nodes;
+	return *this;
+}
+
 
 Maze::~Maze()
 {
@@ -139,12 +166,12 @@ Maze::~Maze()
 	delete[] nodes;
 }
 
-bool Maze::coordHasUnvisitedNeighbor(const Coord c)
+bool Maze::coordHasUnvisitedNeighbor(const Coord c) const
 {
 	return coordHasUnvisitedNeighbor(c.first, c.second);
 }
 
-bool Maze::coordHasUnvisitedNeighbor(const scalar x, const scalar y)
+bool Maze::coordHasUnvisitedNeighbor(const scalar x, const scalar y) const
 {
 	if(!areCoordsValid(x, y))
 		return false;
@@ -159,12 +186,12 @@ bool Maze::coordHasUnvisitedNeighbor(const scalar x, const scalar y)
 	return false;
 }
 
-Coord Maze::randomUnvisitedNeighbor(const Coord c)
+Coord Maze::randomUnvisitedNeighbor(const Coord c) const
 {
 	return randomUnvisitedNeighbor(c.first, c.second);
 }
 
-Coord Maze::randomUnvisitedNeighbor(const scalar x, const scalar y)
+Coord Maze::randomUnvisitedNeighbor(const scalar x, const scalar y) const
 {
 	if(!areCoordsValid(x, y))
 		return mkCoord(-1, -1);
@@ -232,14 +259,14 @@ void Maze::loadMazeTextures(const std::string &path)
 		textures[x] = createTexture(path + "maze" + std::to_string(x) + ".png");
 }
 
-void Maze::render(Shader shader)
+void Maze::render(Shader shader) const
 {
 	for(scalar x = 0; x < width; x++)
 		for(scalar y = 0; y < height; y++)
 			renderTile(shader, x, y);
 }
 
-void Maze::renderTile(Shader shader, const scalar x, const scalar y)
+void Maze::renderTile(Shader shader, const scalar x, const scalar y) const
 {
 	shader.use();
 	glBindTexture(GL_TEXTURE_2D, textures[nodes[x][y] % 4]);

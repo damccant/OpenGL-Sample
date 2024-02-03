@@ -58,3 +58,33 @@ unsigned int createTexture(const std::string& path, unsigned int color)
 
 	return texture;
 }
+
+unsigned int createTextureOfColor(unsigned char red, unsigned char green, unsigned char blue)
+{
+	// create a texture
+	unsigned int texture;
+	glGenTextures(1, &texture);
+
+	// bind to the texture
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	// setup texture wrapping
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // set texture wrapping to repeat
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	// set texture filter parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	/*const unsigned char missing_tex[] = {
+		255, 0, 255,   0, 0, 0,
+		0, 0, 0,       255, 0, 255,
+	};*/
+	const unsigned char missing_tex[] = {
+		red, green, blue,     0, 0
+	};
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, missing_tex);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	return texture;
+}
