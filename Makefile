@@ -4,7 +4,7 @@ rm = rm -f
 cxx = g++ -O3
 cc = gcc -O3
 ld = ld
-objects = glad.o vertexShader.o fragmentShader.o shader.o maze.o texture.o path.o
+objects = glad.o vertexShader.o fragmentShader.o shader.o maze.o texture.o path.o object.o game.o
 
 $(target): $(exe)
 
@@ -30,6 +30,12 @@ texture.o: texture.cpp texture.h
 
 maze.o: maze.cpp maze.h
 	$(cxx) -c maze.cpp -o $@
+
+object.o: object.cpp object.h
+	$(cxx) -c object.cpp -o $@
+
+game.o: game.cpp game.h
+	$(cxx) -c game.cpp -o $@
 
 path.o: path.cpp path.h
 	$(cxx) -c path.cpp -o $@

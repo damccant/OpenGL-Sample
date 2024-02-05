@@ -107,6 +107,8 @@ std::vector<unsigned int> Path::textures;
 void Path::loadPathTextures()
 {
 	textures.push_back(createTextureOfColor(0, 0, 255));
+	textures.push_back(createTextureOfColor(255, 0, 0));
+	textures.push_back(createTextureOfColor(0, 255, 0));
 }
 
 void Path::render(Shader shader, int texture) const

@@ -36,11 +36,17 @@ SetOfCoord Maze::getAdjacentNodes(const scalar x, const scalar y) const
 	return adjacent;
 }
 
+/**
+ * Checks if two cells are adjacent and not blocked by a wall
+ */
 bool Maze::areNodesAdjacent(const Coord c1, const Coord c2) const
 {
 	return areNodesAdjacent(c1.first, c1.second, c2.first, c2.second);
 }
 
+/**
+ * Checks if two cells are adjacent and not blocked by a wall
+ */
 bool Maze::areNodesAdjacent(const scalar x1, const scalar y1, const scalar x2, const scalar y2) const
 {
 	if(!areCoordsValid(x1, y1) || !areCoordsValid(x2, y2))

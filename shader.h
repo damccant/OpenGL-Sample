@@ -1,7 +1,12 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+// glad headers don't contain this guard for some reason
+#ifndef _GLAD_H_
+#define _GLAD_H_
 #include "glad/glad.h"
+#endif /* _GLAD_H_ */
+
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
 

@@ -1,17 +1,20 @@
 #include "glad/glad.h"
+
 #include "shader.h"
 #include "texture.h"
-#include <GLFW/glfw3.h>
 #include <iostream>
 #include <iomanip>
 #include <math.h>
 
-#include "glm/glm.hpp"
+/*#include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/type_ptr.hpp"
+#include "glm/gtc/type_ptr.hpp"*/
+
+#include <GLFW/glfw3.h>
 
 #include "maze.h"
 #include "path.h"
+#include "game.h"
 
 /**
  * Callback for GLFW when the window is resized.
@@ -32,20 +35,29 @@ void toggleWireframe(void)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-
+bool paused = true;
 
 bool allowChangeWireframe = true;
 bool allowChangeMaze = true;
-bool showPath = false;
 bool allowChangeShowPath = true;
+bool allowChangePaused = true;
 
 /**
  * Processes input for the window
  */
-void processInput(GLFWwindow *window, Maze& maze, Path& path)
+void processInput(GLFWwindow *window, Maze& maze)
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+	if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		// prevent holding space
+		if(allowChangePaused)
+			paused = !paused;
+		allowChangePaused = false;
+	}
+	else
+		allowChangePaused = true;
 	if(glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
 	{
 		// prevent holding F1
@@ -53,7 +65,7 @@ void processInput(GLFWwindow *window, Maze& maze, Path& path)
 		{
 			maze.clearMaze();
 			maze.generate();
-			path.findRoute(Coord(0, 0), Coord(24, 19));
+			//path.findRoute(Coord(0, 0), Coord(24, 19));
 		}
 		allowChangeMaze = false;
 	}
@@ -63,7 +75,7 @@ void processInput(GLFWwindow *window, Maze& maze, Path& path)
 	{
 		// prevent holding F2
 		if(allowChangeShowPath)
-			showPath = !showPath;
+			AIObject::showPath = !AIObject::showPath;
 		allowChangeShowPath = false;
 	}
 	else
@@ -162,17 +174,42 @@ int main(int argc, char* argv[])
 	glBindVertexArray(0);
 
 	Maze maze(25, 20);
-	Path path(maze, Coord(0, 0), Coord(24, 19));
+	//Path path(maze, Coord(0, 0), Coord(24, 19));
+	Cheese cheese(maze, 0.5f, 0.5f);
+	Mouse mouse(maze, 0.5f, 19.5f);
+	mouse.setTarget(&cheese);
+	Cat cat(maze, 24.5f, 19.5f);
+	cat.setTarget(&mouse);
 
 	// TEXTURE
-	unsigned int texture = createTexture("asset/container.jpg");
+	unsigned int texture = createTexture("asset/pause.png", GL_RGBA);
 	Maze::loadMazeTextures("asset/maze/");
 	Path::loadPathTextures();
+	Cat::loadTextures("asset/cat.png");
+	Cheese::loadTextures("asset/cheese.png");
+	Mouse::loadTextures("asset/mouse.png");
+
+	float deltaTime = 0.0f;
+	float lastFrame = 0.0f;
 
 	// main render loop
 	while(!glfwWindowShouldClose(window))
 	{
-		processInput(window, maze, path);
+		float currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+		deltaTime = std::min(deltaTime, 1.0f); // don't let more than 1s elapse between frames
+		processInput(window, maze);
+		if(!paused)
+		{
+			cheese.processInput(window);
+			mouse.step();
+			cat.step();
+			
+			mouse.updatePosition(deltaTime);
+			cheese.updatePosition(deltaTime);
+			cat.updatePosition(deltaTime);
+		}
 
 		// clear the frame
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -184,24 +221,27 @@ int main(int argc, char* argv[])
 
 		// render the maze
 		maze.render(theShader);
-		if(showPath)
-			path.render(theShader, 0);
-
-		/*glBindTexture(GL_TEXTURE_2D, texture);
-		// use the shader program
-		theShader.use();
-
-		{
-		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-		theShader.setValue("transform", trans);
-		//glUniformMatrix4fv(glGetUniformLocation(theShader.id, "translate"), 1, GL_FALSE, &trans[0][0]);
+		cat.render(theShader, 2);
+		mouse.render(theShader, 1);
+		cheese.render(theShader);
 		
-		// bind to the vertex array object
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		}*/
+		
+		if(paused)
+		{
+			glBindTexture(GL_TEXTURE_2D, texture);
+			// use the shader program
+			theShader.use();
+
+			glm::mat4 trans = glm::mat4(1.0f);
+			//trans = glm::translate(trans, glm::vec3(0.125f, 0.125f, 0.0f));
+			trans = glm::scale(trans, glm::vec3(0.75f, 0.75f, 1.0f));
+			theShader.setValue("transform", trans);
+			//glUniformMatrix4fv(glGetUniformLocation(theShader.id, "translate"), 1, GL_FALSE, &trans[0][0]);
+			
+			// bind to the vertex array object
+			glBindVertexArray(VAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
 
 
 		glfwSwapBuffers(window);
