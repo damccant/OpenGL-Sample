@@ -3,7 +3,7 @@
 
 #include "object.h"
 
-class Cheese : public PlayerObject
+class Cheese : public AIObject
 {
 private:
 	static unsigned int cheese_tex;
@@ -23,7 +23,7 @@ public:
 	static void loadTextures(const std::string& path);
 };
 
-class Cat : public AIObject
+class Cat : public PlayerObject
 {
 private:
 	static unsigned int cat_tex;

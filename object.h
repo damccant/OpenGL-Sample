@@ -24,6 +24,7 @@ public:
 	float x, y;
 	GameObject(Maze& maze, float x, float y);
 	void render(Shader shader);
+	bool checkCollision(const GameObject &other) const;
 	virtual unsigned int getTexture();
 	virtual void loadTextures();
 };
@@ -46,9 +47,10 @@ public:
 class PlayerObject : public MoveableGameObject
 {
 public:
+	static bool noclip;
 	PlayerObject(Maze& maze, float x, float y);
 	static float moveSpeed;
-	void processInput(GLFWwindow *window);
+	void processInput(GLFWwindow *window, float deltaTime);
 };
 
 /**

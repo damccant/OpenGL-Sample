@@ -1,3 +1,6 @@
+const unsigned int MAZE_X = 25;
+const unsigned int MAZE_Y = 20;
+
 #include "glad/glad.h"
 
 #include "shader.h"
@@ -36,16 +39,48 @@ void toggleWireframe(void)
 }
 
 bool paused = true;
+bool lost = false;
+bool won = false;
 
 bool allowChangeWireframe = true;
 bool allowChangeMaze = true;
 bool allowChangeShowPath = true;
 bool allowChangePaused = true;
+bool allowChangeNoclip = true;
+
+/**
+ * Resets the game to its original state
+ */
+void reset(Maze& maze, GameObject& cat, AIObject& mouse, AIObject& cheese, GameObject& cheeseTgt)
+{
+	maze.clearMaze();
+	maze.generate();
+	won = false;
+	lost = false;
+
+	// reset the cheese's target
+	cheeseTgt.x = rand() % MAZE_X + 0.5f;
+	cheeseTgt.y = rand() % MAZE_Y + 0.5f;
+
+	// reset the cheese
+	cheese.x = 0.5f;
+	cheese.y = 0.5f;
+	cheese.setTarget(&cheeseTgt);
+
+	// reset the mouse
+	mouse.x = 0.5f;
+	mouse.y = MAZE_Y - 0.5f;
+	mouse.setTarget(&cheese);
+
+	// reset the cat
+	cat.x = MAZE_X - 0.5f;
+	cat.y = MAZE_Y - 0.5f;
+}
 
 /**
  * Processes input for the window
  */
-void processInput(GLFWwindow *window, Maze& maze)
+void processInput(GLFWwindow *window, Maze& maze, GameObject& cat, AIObject& mouse, AIObject& cheese, GameObject& cheeseTgt)
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -53,7 +88,10 @@ void processInput(GLFWwindow *window, Maze& maze)
 	{
 		// prevent holding space
 		if(allowChangePaused)
-			paused = !paused;
+			if(lost || won)
+				reset(maze, cat, mouse, cheese, cheeseTgt);
+			else
+				paused = !paused;
 		allowChangePaused = false;
 	}
 	else
@@ -62,11 +100,7 @@ void processInput(GLFWwindow *window, Maze& maze)
 	{
 		// prevent holding F1
 		if(allowChangeMaze)
-		{
-			maze.clearMaze();
-			maze.generate();
-			//path.findRoute(Coord(0, 0), Coord(24, 19));
-		}
+			reset(maze, cat, mouse, cheese, cheeseTgt);
 		allowChangeMaze = false;
 	}
 	else
@@ -80,6 +114,15 @@ void processInput(GLFWwindow *window, Maze& maze)
 	}
 	else
 		allowChangeShowPath = true;
+	if(glfwGetKey(window, GLFW_KEY_F3) == GLFW_PRESS)
+	{
+		// prevent holding F3
+		if(allowChangeNoclip)
+			PlayerObject::noclip = !PlayerObject::noclip;
+		allowChangeNoclip = false;
+	}
+	else
+		allowChangeNoclip = true;
 	if(glfwGetKey(window, GLFW_KEY_F9) == GLFW_PRESS)
 	{
 		// prevent wireframe mode toggling on/off instantly
@@ -89,6 +132,18 @@ void processInput(GLFWwindow *window, Maze& maze)
 	}
 	else
 		allowChangeWireframe = true;
+}
+
+void drawMenu(Shader shader, unsigned int texture)
+{
+	glBindTexture(GL_TEXTURE_2D, texture);
+	// use the shader program
+	shader.use();
+
+	glm::mat4 trans = glm::mat4(1.0f);
+	trans = glm::scale(trans, glm::vec3(0.75f, 0.75f, 1.0f));
+	shader.setValue("transform", trans);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 int main(int argc, char* argv[])
@@ -123,6 +178,10 @@ int main(int argc, char* argv[])
 
 	// setup the GLFW window callback
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+	// enable texture blending (needed to make transparent textures work)
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// create the shader program (contains all shaders, etc.)
 	Shader theShader;
@@ -173,16 +232,20 @@ int main(int argc, char* argv[])
 	// unbind the VAO so we don't accidently modify it
 	glBindVertexArray(0);
 
-	Maze maze(25, 20);
+	Maze maze(MAZE_X, MAZE_Y);
 	//Path path(maze, Coord(0, 0), Coord(24, 19));
+	GameObject cheeseTgt(maze, rand() % MAZE_X + 0.5f, rand() % MAZE_Y + 0.5f);
 	Cheese cheese(maze, 0.5f, 0.5f);
-	Mouse mouse(maze, 0.5f, 19.5f);
+	cheese.setTarget(&cheeseTgt);
+	Mouse mouse(maze, 0.5f, MAZE_Y - 0.5f);
 	mouse.setTarget(&cheese);
-	Cat cat(maze, 24.5f, 19.5f);
-	cat.setTarget(&mouse);
+	Cat cat(maze, MAZE_X - 0.5f, MAZE_Y - 0.5f);
+	//cat.setTarget(&mouse);
 
 	// TEXTURE
-	unsigned int texture = createTexture("asset/pause.png", GL_RGBA);
+	unsigned int tex_pause = createTexture("asset/pause.png", GL_RGBA);
+	unsigned int tex_lost = createTexture("asset/lost.png", GL_RGBA);
+	unsigned int tex_won = createTexture("asset/won.png", GL_RGBA);
 	Maze::loadMazeTextures("asset/maze/");
 	Path::loadPathTextures();
 	Cat::loadTextures("asset/cat.png");
@@ -199,16 +262,31 @@ int main(int argc, char* argv[])
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 		deltaTime = std::min(deltaTime, 1.0f); // don't let more than 1s elapse between frames
-		processInput(window, maze);
-		if(!paused)
+		processInput(window, maze, cat, mouse, cheese, cheeseTgt);
+		if(!paused && !won && !lost)
 		{
-			cheese.processInput(window);
+			cat.processInput(window, deltaTime);
 			mouse.step();
-			cat.step();
+			cheese.step();
+			
 			
 			mouse.updatePosition(deltaTime);
 			cheese.updatePosition(deltaTime);
 			cat.updatePosition(deltaTime);
+
+			if(cheese.checkCollision(cheeseTgt))
+			{
+				cheeseTgt.x = rand() % MAZE_X + 0.5f;
+				cheeseTgt.y = rand() % MAZE_Y + 0.5f;
+			}
+			if(cat.checkCollision(mouse))
+			{
+				won = true;
+			}
+			if(mouse.checkCollision(cheese))
+			{
+				lost = true;
+			}
 		}
 
 		// clear the frame
@@ -221,27 +299,17 @@ int main(int argc, char* argv[])
 
 		// render the maze
 		maze.render(theShader);
-		cat.render(theShader, 2);
-		mouse.render(theShader, 1);
-		cheese.render(theShader);
 		
+		mouse.render(theShader, 1);
+		cheese.render(theShader, 2);
+		cat.render(theShader);
 		
 		if(paused)
-		{
-			glBindTexture(GL_TEXTURE_2D, texture);
-			// use the shader program
-			theShader.use();
-
-			glm::mat4 trans = glm::mat4(1.0f);
-			//trans = glm::translate(trans, glm::vec3(0.125f, 0.125f, 0.0f));
-			trans = glm::scale(trans, glm::vec3(0.75f, 0.75f, 1.0f));
-			theShader.setValue("transform", trans);
-			//glUniformMatrix4fv(glGetUniformLocation(theShader.id, "translate"), 1, GL_FALSE, &trans[0][0]);
-			
-			// bind to the vertex array object
-			glBindVertexArray(VAO);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		}
+			drawMenu(theShader, tex_pause);
+		else if(won)
+			drawMenu(theShader, tex_won);
+		else if(lost)
+			drawMenu(theShader, tex_lost);
 
 
 		glfwSwapBuffers(window);

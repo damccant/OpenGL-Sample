@@ -32,28 +32,33 @@ static unsigned int createShader(unsigned int type, const char* src, const size_
 	return shader;
 }
 
-// include the compiled in shaders
+#ifndef _WIN32 /* hack for MinGW ld */
+#define underscore(a) _##a
+#else
+#define underscore(a) a
+#endif /* _WIN32 */
 
-extern const char _binary_vertexShader_vert_start[];
-extern const char _binary_vertexShader_vert_end[];
+// include the compiled in shaders
+extern const char underscore(binary_vertexShader_vert_start[]);
+extern const char underscore(binary_vertexShader_vert_end[]);
 // the linker seems to not like this
-//extern const size_t _binary_vertexShader_vert_size;
-const size_t _binary_vertexShader_vert_size = _binary_vertexShader_vert_end - _binary_vertexShader_vert_start;
+//extern const size_t underscore(binary_vertexShader_vert_size);
+const size_t underscore(binary_vertexShader_vert_size) = underscore(binary_vertexShader_vert_end) - underscore(binary_vertexShader_vert_start);
 
 static unsigned int createVertexShader(void)
 {
-	return createShader(GL_VERTEX_SHADER, _binary_vertexShader_vert_start, _binary_vertexShader_vert_size);
+	return createShader(GL_VERTEX_SHADER, underscore(binary_vertexShader_vert_start), underscore(binary_vertexShader_vert_size));
 }
 
-extern const char _binary_fragmentShader_frag_start[];
-extern const char _binary_fragmentShader_frag_end[];
+extern const char underscore(binary_fragmentShader_frag_start[]);
+extern const char underscore(binary_fragmentShader_frag_end[]);
 // the linker seems to not like this
-//extern const size_t _binary_fragmentShader_frag_size;
-const size_t _binary_fragmentShader_frag_size = _binary_fragmentShader_frag_end - _binary_fragmentShader_frag_start;
+//extern const size_t underscore(binary_fragmentShader_frag_size);
+const size_t underscore(binary_fragmentShader_frag_size) = underscore(binary_fragmentShader_frag_end) - underscore(binary_fragmentShader_frag_start);
 
 static unsigned int createFragmentShader(void)
 {
-	return createShader(GL_FRAGMENT_SHADER, _binary_fragmentShader_frag_start, _binary_fragmentShader_frag_size);
+	return createShader(GL_FRAGMENT_SHADER, underscore(binary_fragmentShader_frag_start), underscore(binary_fragmentShader_frag_size));
 }
 
 inline static unsigned int createShaderProgram(void)
@@ -91,11 +96,6 @@ Shader::~Shader()
 	// delete the now unneeded shader program
 	//glDeleteProgram(id);
 }
-
-/*template<class T> void setUniform(const std::string &name, T... value) const
-{
-
-}*/
 
 void Shader::setValue(const std::string &name, bool value) const
 {

@@ -40,7 +40,7 @@ unsigned int createTexture(const std::string& path, unsigned int color)
 	if(data)
 	{
 		// modifying GL_TEXTURE_2D, mipmap level, store in RGB, width, height, (always 0), source is RGB, source is UNSIGNED_BYTE
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, color, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, color, GL_UNSIGNED_BYTE, data);
 		// create the MipMap
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}

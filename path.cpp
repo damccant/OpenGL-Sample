@@ -74,7 +74,7 @@ std::deque<Coord> Path::findRoute(const Coord from, const Coord to)
 		for(const Coord neighbor : neighbors)
 		{
 			float tentative_gScore = gScore[current] + 1;
-			gScore.try_emplace(neighbor, 999999999.0f);
+			gScore.emplace(neighbor, 999999999.0f);
 			if(tentative_gScore < gScore[neighbor])
 			{
 				cameFrom[neighbor] = current;

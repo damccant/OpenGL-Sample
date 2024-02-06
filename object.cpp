@@ -24,6 +24,17 @@ PlayerObject::PlayerObject(Maze& maze, float x, float y) : MoveableGameObject(ma
 AIObject::AIObject(Maze& maze, float x, float y) : MoveableGameObject(maze, x, y) {}
 AIObject::AIObject(Maze& maze, float x, float y, float xVel, float yVel) : MoveableGameObject(maze, x, y, xVel, yVel) {}
 
+/**
+ * Checks if two objects have collided using AABB - AABB collision
+ */
+bool GameObject::checkCollision(const GameObject &other) const
+{
+	float size = 0.3f;
+	bool collisionX = x + size >= other.x - size && other.x + size >= x - size;
+	bool collisionY = y + size >= other.y - size && other.y + size >= y - size;
+	return collisionX && collisionY;
+}
+
 void GameObject::render(Shader shader)
 {
 	glBindTexture(GL_TEXTURE_2D, getTexture());
@@ -63,11 +74,14 @@ void AIObject::render(Shader shader, int pathColor)
 }
 
 float PlayerObject::moveSpeed = 2.5f;
+bool PlayerObject::noclip = false;
 
 /**
  * Process the keyboard input on the player's character
+ * 
+ * We need deltaTime to calculate the next coordinates we are about to move to and make sure they are not in a wall
  */
-void PlayerObject::processInput(GLFWwindow *window)
+void PlayerObject::processInput(GLFWwindow *window, float deltaTime)
 {
 	xVel = yVel = 0;
 
@@ -82,20 +96,23 @@ void PlayerObject::processInput(GLFWwindow *window)
 		xVel -= moveSpeed;
 
 	// prevent the player from moving off the screen
-	if(x >= maze->width)
+	if(x + 0.5f >= maze->width)
 		xVel = std::min(xVel, 0.0f);
-	if(x <= 0)
+	if(x - 0.5f <= 0)
 		xVel = std::max(xVel, 0.0f);
-	if(y >= maze->height)
+	if(y + 0.5f >= maze->height)
 		yVel = std::min(yVel, 0.0f);
-	if(y <= 0)
+	if(y - 0.5f <= 0)
 		yVel = std::max(yVel, 0.0f);
 
 	// prevent the player from going thru walls
-	/*if(!maze->areNodesAdjacent(x, y, x+xVel, y))
-		xVel = 0.0f;
-	if(!maze->areNodesAdjacent(x, y, x, y+yVel))
-		yVel = 0.0f;*/
+	if(!noclip)
+	{
+		if(!maze->areNodesAdjacent(x, y, x+(xVel*deltaTime), y))
+			xVel = 0.0f;
+		if(!maze->areNodesAdjacent(x, y, x, y+(yVel*deltaTime)))
+			yVel = 0.0f;
+	}
 }
 
 void AIObject::setTarget(GameObject* object)

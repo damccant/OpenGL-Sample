@@ -1,23 +1,39 @@
-exe = sample
-libs = -lglfw -lGL -lX11 -lpthread -lXrandr -ldl
-rm = rm -f
-cxx = g++ -O3
-cc = gcc -O3
-ld = ld
+ifeq ($(OS), Windows_NT)
+	exe = catnmouse.exe
+	libs = -lglfw3 -lopengl32 -lgdi32
+	rm = del
+	cxx = c++ -O3
+	cc = gcc -O3
+	ld = ld
+	strip = strip
+else
+	exe = catnmouse
+	libs = `pkg-config --static --libs glfw3`
+	rm = rm -f
+	cxx = g++ -O3
+	cc = gcc -O3
+	ld = ld -z noexecstack
+	strip = strip
+endif
+
 objects = glad.o vertexShader.o fragmentShader.o shader.o maze.o texture.o path.o object.o game.o
 
 $(target): $(exe)
 
-$(exe): sample.cpp $(objects)
-	$(cxx) sample.cpp $(objects) -o $@ $(libs)
+$(exe): main.cpp $(objects)
+	$(cxx) $(cxxflags) -o $(exe) main.cpp $(objects) $(libs)
+	$(strip) $(exe)
 
-windows: exe = sample.exe
-windows: rm = del
-windows: cc = i686-w64-mingw32-gcc --static
-windows: ld = i686-w64-mingw32-ld
-windows: $(exe)
+cross: exe = catnmouse.exe
+cross: cxxflags = -static -mwindows
+cross: cxx = i686-w64-mingw32-g++ -I/usr/local/include -O3
+cross: cc = i686-w64-mingw32-gcc -O3
+cross: ld = i686-w64-mingw32-ld
+cross: strip = i686-w64-mingw32-strip
+cross: $(exe)
 
-
+static: cxxflags = -static
+static: $(exe)
 
 glad.o: glad.c
 	$(cc) -c $< -o $@
@@ -41,10 +57,10 @@ path.o: path.cpp path.h
 	$(cxx) -c path.cpp -o $@
 
 vertexShader.o: vertexShader.vert
-	$(ld) -z noexecstack -r -b binary -o $@ $<
+	$(ld) -r -b binary -o $@ $<
 
 fragmentShader.o: fragmentShader.frag
-	$(ld) -z noexecstack -r -b binary -o $@ $<
+	$(ld) -r -b binary -o $@ $<
 
 .PHONY: clean
 clean:
