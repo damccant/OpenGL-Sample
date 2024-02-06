@@ -1,4 +1,4 @@
-# OpenGL-Sample
+# Cat N' Mouse Game
 
 Cat N' Mouse game built with C++ and OpenGL
 
