@@ -10,6 +10,15 @@ Requires MinGW, GLFW and OpenGL.  The software also requires the GLM and glad li
 
 1) Install MinGW, download from [here](https://sourceforge.net/projects/mingw/).  Ensure mingw32-gcc-g++ is selected in MinGW Installation Manager before proceeding.
 2) Install GLFW and OpenGL.
+3) Run MinGW make
+```shell
+cd cat-n-mouse
+mingw32-make
+```
+4) Run the game
+```shell
+./catnmouse.exe
+```
 
 ### Building on Linux
 
@@ -35,13 +44,22 @@ sudo apt-get install libglfw3 libglfw3-dev
 ```
 5) Compile the code
 ```shell
-cd OpenGL-Sample
+cd cat-n-mouse
 make
 ```
 6) Run the game
 ```shell
-./sample
+./catnmouse
 ```
 
 ## Running the pre-built binaries
 
+The pre-built binaries have been compiled statically, meaning that no extra libraries are required to run them.
+
+### Windows
+
+Run the provided `.exe` file.  If prompted, click Run.
+
+### Linux
+
+Run the provided executable.  This executable is linked against `libc`, so ensure that it is installed.
